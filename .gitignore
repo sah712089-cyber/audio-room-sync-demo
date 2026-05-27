@@ -16,9 +16,15 @@ dist-ssr
 .nitro
 *.local
 
+# Vercel build output
+.vercel/output/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
+
+# Environment variables (contains secrets)
+.env
 
 # Editor directories and files
 .vscode/*
