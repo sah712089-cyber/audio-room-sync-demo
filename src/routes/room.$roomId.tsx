@@ -337,6 +337,39 @@ function RoomPage() {
               tracks={imageKitTracks.length > 0 ? imageKitTracks : undefined}
             />
 
+            {queue.length > 0 && (
+              <div className="mt-6 pt-5 border-t border-border/60">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Added · YouTube</h3>
+                  <span className="text-xs font-mono text-muted-foreground">{queue.length}</span>
+                </div>
+                <ul className="space-y-1.5">
+                  {queue.map((t) => (
+                    <li key={t.id} className="group flex gap-2.5 rounded-xl p-1.5 hover:bg-secondary/40 transition">
+                      <div className="size-10 rounded-lg overflow-hidden bg-secondary/60 shrink-0">
+                        {t.thumbnail_url && <img src={t.thumbnail_url} alt="" className="size-full object-cover" loading="lazy" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold truncate" title={t.title}>{t.title}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">
+                          {t.channel}{t.added_by ? ` · by ${t.added_by}` : ""}
+                        </div>
+                      </div>
+                      <a
+                        href={t.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="self-center text-[11px] text-mint opacity-0 group-hover:opacity-100 transition shrink-0 pr-1"
+                        aria-label="Open on YouTube"
+                      >
+                        ↗
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="mt-6 pt-5 border-t border-border/60">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Added · YouTube</h3>
