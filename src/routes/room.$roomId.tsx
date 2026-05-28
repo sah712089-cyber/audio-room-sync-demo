@@ -55,6 +55,8 @@ function RoomPage() {
   const [session, setSessionState] = useState(() => getSession(roomId));
   const [state, setState] = useState<RoomState | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [queue, setQueue] = useState<QueueTrack[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [roomMissing, setRoomMissing] = useState(false);
   const [copied, setCopied] = useState(false);
 
