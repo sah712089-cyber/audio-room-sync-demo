@@ -4,8 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { TrackQueue } from "@/components/TrackQueue";
 import { JoinModal } from "@/components/JoinModal";
+import { SearchModal } from "@/components/SearchModal";
 import { CATALOG, type Track } from "@/lib/catalog";
 import { clearSession, getSession, setSession } from "@/lib/session";
+
+interface QueueTrack {
+  id: string;
+  room_id: string;
+  video_id: string;
+  youtube_url: string;
+  title: string;
+  channel: string | null;
+  thumbnail_url: string | null;
+  duration_seconds: number | null;
+  added_by: string | null;
+  position: number;
+  added_at: string;
+}
 
 export const Route = createFileRoute("/room/$roomId")({
   head: () => ({
@@ -40,6 +55,8 @@ function RoomPage() {
   const [session, setSessionState] = useState(() => getSession(roomId));
   const [state, setState] = useState<RoomState | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [queue, setQueue] = useState<QueueTrack[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [roomMissing, setRoomMissing] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -73,6 +90,10 @@ function RoomPage() {
       const { data: ps } = await supabase
         .from("participants").select("*").eq("room_id", roomId).order("joined_at");
       if (!cancelled && ps) setParticipants(ps as Participant[]);
+
+      const { data: qs } = await supabase
+        .from("queue_tracks").select("*").eq("room_id", roomId).order("position");
+      if (!cancelled && qs) setQueue(qs as QueueTrack[]);
     })();
     return () => { cancelled = true; };
   }, [roomId]);
@@ -97,6 +118,15 @@ function RoomPage() {
       .on("postgres_changes",
         { event: "DELETE", schema: "public", table: "participants", filter: `room_id=eq.${roomId}` },
         (payload) => setParticipants((p) => p.filter((x) => x.id !== (payload.old as Participant).id)))
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "queue_tracks", filter: `room_id=eq.${roomId}` },
+        (payload) => setQueue((q) => {
+          const nq = payload.new as QueueTrack;
+          return q.some((x) => x.id === nq.id) ? q : [...q, nq].sort((a, b) => a.position - b.position);
+        }))
+      .on("postgres_changes",
+        { event: "DELETE", schema: "public", table: "queue_tracks", filter: `room_id=eq.${roomId}` },
+        (payload) => setQueue((q) => q.filter((x) => x.id !== (payload.old as QueueTrack).id)))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [roomId]);
@@ -222,6 +252,14 @@ function RoomPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setSearchOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-mint text-primary-foreground font-semibold px-4 py-2 text-sm glow-mint hover:scale-[1.02] active:scale-95 transition"
+            >
+              <PlusIcon />
+              <span className="hidden xs:inline">Add music</span>
+              <span className="xs:hidden">Add</span>
+            </button>
+            <button
               onClick={copyShare}
               className="hidden sm:inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/40 backdrop-blur px-4 py-2 text-sm hover:bg-card/70 transition"
             >
@@ -237,6 +275,13 @@ function RoomPage() {
           </div>
         </header>
 
+        <SearchModal
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          roomId={roomId}
+          addedBy={session.displayName}
+        />
+
         {/* Sidebar layout: queue left, player right */}
         <div className="grid lg:grid-cols-[340px_minmax(0,1fr)] gap-6">
           <aside className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur p-5 h-fit lg:sticky lg:top-6">
@@ -249,6 +294,39 @@ function RoomPage() {
               isPlaying={state?.is_playing ?? false}
               onSelect={onSelectTrack}
             />
+
+            {queue.length > 0 && (
+              <div className="mt-6 pt-5 border-t border-border/60">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Added · YouTube</h3>
+                  <span className="text-xs font-mono text-muted-foreground">{queue.length}</span>
+                </div>
+                <ul className="space-y-1.5">
+                  {queue.map((t) => (
+                    <li key={t.id} className="group flex gap-2.5 rounded-xl p-1.5 hover:bg-secondary/40 transition">
+                      <div className="size-10 rounded-lg overflow-hidden bg-secondary/60 shrink-0">
+                        {t.thumbnail_url && <img src={t.thumbnail_url} alt="" className="size-full object-cover" loading="lazy" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold truncate" title={t.title}>{t.title}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">
+                          {t.channel}{t.added_by ? ` · by ${t.added_by}` : ""}
+                        </div>
+                      </div>
+                      <a
+                        href={t.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="self-center text-[11px] text-mint opacity-0 group-hover:opacity-100 transition shrink-0 pr-1"
+                        aria-label="Open on YouTube"
+                      >
+                        ↗
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="mt-6 pt-5 border-t border-border/60">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
@@ -307,4 +385,8 @@ function Avatar({ name }: { name: string }) {
 
 function LinkIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>;
+}
+
+function PlusIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>;
 }

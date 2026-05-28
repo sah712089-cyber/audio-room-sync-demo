@@ -43,6 +43,48 @@ export type Database = {
           },
         ]
       }
+      queue_tracks: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          channel: string | null
+          duration_seconds: number | null
+          id: string
+          position: number
+          room_id: string
+          thumbnail_url: string | null
+          title: string
+          video_id: string
+          youtube_url: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          channel?: string | null
+          duration_seconds?: number | null
+          id?: string
+          position?: number
+          room_id: string
+          thumbnail_url?: string | null
+          title: string
+          video_id: string
+          youtube_url: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          channel?: string | null
+          duration_seconds?: number | null
+          id?: string
+          position?: number
+          room_id?: string
+          thumbnail_url?: string | null
+          title?: string
+          video_id?: string
+          youtube_url?: string
+        }
+        Relationships: []
+      }
       room_state: {
         Row: {
           current_track_id: string | null
