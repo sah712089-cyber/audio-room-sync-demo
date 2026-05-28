@@ -118,6 +118,15 @@ function RoomPage() {
       .on("postgres_changes",
         { event: "DELETE", schema: "public", table: "participants", filter: `room_id=eq.${roomId}` },
         (payload) => setParticipants((p) => p.filter((x) => x.id !== (payload.old as Participant).id)))
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "queue_tracks", filter: `room_id=eq.${roomId}` },
+        (payload) => setQueue((q) => {
+          const nq = payload.new as QueueTrack;
+          return q.some((x) => x.id === nq.id) ? q : [...q, nq].sort((a, b) => a.position - b.position);
+        }))
+      .on("postgres_changes",
+        { event: "DELETE", schema: "public", table: "queue_tracks", filter: `room_id=eq.${roomId}` },
+        (payload) => setQueue((q) => q.filter((x) => x.id !== (payload.old as QueueTrack).id)))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [roomId]);
