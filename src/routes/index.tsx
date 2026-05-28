@@ -104,7 +104,7 @@ function Landing() {
       </main>
 
       <footer className="relative z-10 max-w-6xl mx-auto px-6 pb-10 text-xs text-muted-foreground/70">
-        SyncBeat · streaming via ImageKit CDN · realtime by Lovable Cloud
+        SyncBeat · streaming via ImageKit CDN 
       </footer>
     </div>
   );
