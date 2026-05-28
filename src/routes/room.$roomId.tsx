@@ -4,8 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { TrackQueue } from "@/components/TrackQueue";
 import { JoinModal } from "@/components/JoinModal";
+import { SearchModal } from "@/components/SearchModal";
 import { CATALOG, type Track } from "@/lib/catalog";
 import { clearSession, getSession, setSession } from "@/lib/session";
+
+interface QueueTrack {
+  id: string;
+  room_id: string;
+  video_id: string;
+  youtube_url: string;
+  title: string;
+  channel: string | null;
+  thumbnail_url: string | null;
+  duration_seconds: number | null;
+  added_by: string | null;
+  position: number;
+  added_at: string;
+}
 
 export const Route = createFileRoute("/room/$roomId")({
   head: () => ({
