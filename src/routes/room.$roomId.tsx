@@ -252,6 +252,14 @@ function RoomPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setSearchOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-mint text-primary-foreground font-semibold px-4 py-2 text-sm glow-mint hover:scale-[1.02] active:scale-95 transition"
+            >
+              <PlusIcon />
+              <span className="hidden xs:inline">Add music</span>
+              <span className="xs:hidden">Add</span>
+            </button>
+            <button
               onClick={copyShare}
               className="hidden sm:inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/40 backdrop-blur px-4 py-2 text-sm hover:bg-card/70 transition"
             >
@@ -266,6 +274,13 @@ function RoomPage() {
             </button>
           </div>
         </header>
+
+        <SearchModal
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          roomId={roomId}
+          addedBy={session.displayName}
+        />
 
         {/* Sidebar layout: queue left, player right */}
         <div className="grid lg:grid-cols-[340px_minmax(0,1fr)] gap-6">
