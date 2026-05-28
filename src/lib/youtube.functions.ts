@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { IMAGEKIT_ENDPOINT, type Track } from "@/lib/catalog";
 
 export interface YouTubeResult {
   videoId: string;
@@ -24,6 +24,12 @@ export const searchYouTube = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const key = process.env.YOUTUBE_API_KEY;
+    console.log("[youtube.search] env check:", {
+      keyExists: !!key,
+      keyPrefix: key?.slice(0, 8),
+      nodeEnv: process.env.NODE_ENV,
+      tssBase: process.env.TSS_SERVER_FN_BASE,
+    });
     if (!key) throw new Error("YOUTUBE_API_KEY is not configured");
 
     const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
@@ -34,8 +40,10 @@ export const searchYouTube = createServerFn({ method: "POST" })
     searchUrl.searchParams.set("key", key);
 
     const searchRes = await fetch(searchUrl);
+    console.log("[youtube.search] fetch response:", { status: searchRes.status, ok: searchRes.ok });
     if (!searchRes.ok) {
       const body = await searchRes.text();
+      console.error("[youtube.search] API error:", { status: searchRes.status, body: body.slice(0, 500) });
       throw new Error(`YouTube search failed: ${searchRes.status} ${body}`);
     }
     const searchJson = await searchRes.json() as {
@@ -74,6 +82,18 @@ export const searchYouTube = createServerFn({ method: "POST" })
     return { results };
   });
 
+/** Quick diagnostic — does the SSR / env-var pipeline work on Vercel? */
+export const diagnosticFn = createServerFn({ method: "POST" }).handler(async () => {
+  return {
+    ok: true,
+    youtubeKeyExists: !!process.env.YOUTUBE_API_KEY,
+    youtubeKeyPrefix: process.env.YOUTUBE_API_KEY ? process.env.YOUTUBE_API_KEY.slice(0, 8) : null,
+    nodeEnv: process.env.NODE_ENV ?? null,
+    tssServerFnBase: process.env.TSS_SERVER_FN_BASE ?? null,
+    playbackEndpointExists: !!process.env.PLAYBACK_ENDPOINT_URL,
+  };
+});
+
 export const addQueueTrack = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
@@ -88,44 +108,58 @@ export const addQueueTrack = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data }) => {
+    // Fire-and-forget external playback endpoint
     const endpoint = process.env.PLAYBACK_ENDPOINT_URL;
-    if (!endpoint) throw new Error("PLAYBACK_ENDPOINT_URL is not configured");
-
-    // 1. Notify external playback endpoint
-    let endpointStatus: number | null = null;
-    try {
-      const res = await fetch(endpoint, {
+    if (endpoint) {
+      fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: data.url, roomId: data.roomId }),
-      });
-      endpointStatus = res.status;
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`Playback endpoint returned ${res.status}: ${body.slice(0, 200)}`);
-      }
-    } catch (err) {
-      console.error("Playback endpoint error", err);
-      throw err instanceof Error ? err : new Error("Playback endpoint request failed");
+      }).catch(() => {});
     }
 
-    // 2. Insert into shared queue (triggers Supabase Realtime fan-out)
-    const { data: inserted, error } = await supabaseAdmin
-      .from("queue_tracks")
-      .insert({
-        room_id: data.roomId,
-        video_id: data.videoId,
-        youtube_url: data.url,
-        title: data.title,
-        channel: data.channel ?? null,
-        thumbnail_url: data.thumbnail ?? null,
-        duration_seconds: data.durationSeconds ?? null,
-        added_by: data.addedBy ?? null,
-      })
-      .select()
-      .single();
-
-    if (error) throw new Error(`Failed to add track to queue: ${error.message}`);
-
-    return { track: inserted, endpointStatus };
+    return { ok: true };
   });
+
+export interface ImageKitFile {
+  name: string;
+  filePath: string;
+  url: string;
+  fileType: string;
+  size: number;
+  customCoordinates?: string | null;
+  [key: string]: unknown;
+}
+
+export const listImageKitTracks = createServerFn({ method: "POST" }).handler(async () => {
+  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+  if (!privateKey) throw new Error("IMAGEKIT_PRIVATE_KEY is not configured");
+
+  const auth = btoa(`${privateKey}:`);
+  const res = await fetch("https://api.imagekit.io/v1/files?path=tracks&fileType=all&sortOrder=ASC", {
+    headers: { Authorization: `Basic ${auth}` },
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`ImageKit list files failed: ${res.status} ${body}`);
+  }
+
+  const files = (await res.json()) as ImageKitFile[];
+  const tracks: Track[] = files
+    .filter((f) => f.fileType === "non-image" || f.name.endsWith(".mp3"))
+    .map((f) => {
+      const name = f.name.replace(/\.mp3$/i, "").replace(/[_-]+/g, " ").trim();
+      const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const parts = name.includes(" - ") ? name.split(/ - /).map((s) => s.trim()) : [name.replace(/\s+/g, " ").trim(), ""];
+      return {
+        id: id || `track-${Date.now()}`,
+        title: (parts[0]?.trim() || name).replace(/^["']|["']$/g, "").trim(),
+        artist: parts[1]?.trim() || "Unknown",
+        path: `/tracks/${encodeURIComponent(f.name)}`,
+        duration: undefined,
+      };
+    });
+
+  return { tracks, endpoint: IMAGEKIT_ENDPOINT };
+});

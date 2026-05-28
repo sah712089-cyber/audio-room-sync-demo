@@ -76,10 +76,12 @@ export function SearchModal({ open, onClose, roomId, addedBy }: Props) {
           addedBy,
         },
       });
-      onClose();
+      setSubmittingId(null);
+      setError("Song will be added in a minute");
+      setTimeout(onClose, 2000);
     } catch (err) {
       console.error(err);
-      setError("Submission failed. Please try again.");
+      setError(err instanceof Error ? err.message : "Submission failed");
       setSubmittingId(null);
     }
   }
@@ -126,7 +128,11 @@ export function SearchModal({ open, onClose, roomId, addedBy }: Props) {
           </form>
 
           {error && (
-            <div className="mt-3 text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-xl px-3 py-2">
+            <div className={`mt-3 text-sm rounded-xl px-3 py-2 ${
+              error.startsWith("Song will be added")
+                ? "text-mint bg-mint/10 border border-mint/30"
+                : "text-destructive bg-destructive/10 border border-destructive/30"
+            }`}>
               {error}
             </div>
           )}

@@ -4,12 +4,14 @@ interface Props {
   currentTrackId: string | null;
   isPlaying: boolean;
   onSelect: (track: Track) => void;
+  tracks?: Track[];
 }
 
-export function TrackQueue({ currentTrackId, isPlaying, onSelect }: Props) {
+export function TrackQueue({ currentTrackId, isPlaying, onSelect, tracks }: Props) {
+  const list = tracks ?? CATALOG;
   return (
     <div className="space-y-1">
-      {CATALOG.map((t, i) => {
+      {list.map((t, i) => {
         const active = t.id === currentTrackId;
         return (
           <button

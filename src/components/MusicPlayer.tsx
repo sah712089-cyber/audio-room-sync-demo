@@ -10,9 +10,10 @@ interface Props {
   onPause: () => void;
   onSeek: (sec: number) => void;
   onSelectTrack: (track: Track) => void;
+  tracks?: Track[];
 }
 
-const SYNC_TOLERANCE = 0.5; // seconds
+const SYNC_TOLERANCE = 0.5;
 
 export function MusicPlayer({
   trackId,
@@ -23,18 +24,18 @@ export function MusicPlayer({
   onPause,
   onSeek,
   onSelectTrack,
+  tracks,
 }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const track = getTrack(trackId);
+  const catalog = tracks ?? CATALOG;
+  const track = trackId ? catalog.find((t) => t.id === trackId) ?? getTrack(trackId) : undefined;
 
-  // Compute target time: if playing, account for elapsed since updated_at
   function targetTime(): number {
     if (!isPlaying || !updatedAt) return positionSeconds;
     const elapsed = (Date.now() - new Date(updatedAt).getTime()) / 1000;
     return positionSeconds + Math.max(0, elapsed);
   }
 
-  // Sync playback when state changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !track) return;
@@ -51,14 +52,12 @@ export function MusicPlayer({
     }
 
     if (isPlaying) {
-      audio.play().catch(() => { /* autoplay blocked until user gesture */ });
+      audio.play().catch(() => {});
     } else {
       audio.pause();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackId, isPlaying, positionSeconds, updatedAt]);
 
-  // Drift correction every 2s while playing
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
@@ -66,23 +65,22 @@ export function MusicPlayer({
       if (!audio) return;
       const t = targetTime();
       if (Math.abs(audio.currentTime - t) > SYNC_TOLERANCE) {
-        try { audio.currentTime = t; } catch { /* noop */ }
+        try { audio.currentTime = t; } catch {}
       }
     }, 2000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, updatedAt, positionSeconds]);
 
-  const currentIndex = track ? CATALOG.findIndex((t) => t.id === track.id) : -1;
+  const currentIndex = track ? catalog.findIndex((t) => t.id === track.id) : -1;
 
   function next() {
     if (currentIndex < 0) return;
-    const n = CATALOG[(currentIndex + 1) % CATALOG.length];
+    const n = catalog[(currentIndex + 1) % catalog.length];
     onSelectTrack(n);
   }
   function prev() {
     if (currentIndex < 0) return;
-    const p = CATALOG[(currentIndex - 1 + CATALOG.length) % CATALOG.length];
+    const p = catalog[(currentIndex - 1 + catalog.length) % catalog.length];
     onSelectTrack(p);
   }
 
