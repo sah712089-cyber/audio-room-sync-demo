@@ -56,7 +56,6 @@ function Landing() {
         <nav className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
           <span>Real-time</span>
           <span>No signup</span>
-          <span>Powered by ImageKit</span>
         </nav>
       </header>
 
