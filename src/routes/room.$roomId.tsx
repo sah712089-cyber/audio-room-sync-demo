@@ -62,6 +62,18 @@ function RoomPage() {
   const [queuePage, setQueuePage] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [roomMissing, setRoomMissing] = useState(false);
+  const [boostUntil, setBoostUntil] = useState(0);
+
+  const refetchQueue = useCallback(async () => {
+    const { data } = await supabase
+      .from("queue_tracks").select("*").eq("room_id", roomId).order("position");
+    if (!data) return;
+    const incoming = data as QueueTrack[];
+    setQueue((prev) => {
+      if (prev.length === incoming.length && prev.every((p, i) => p.id === incoming[i].id)) return prev;
+      return incoming;
+    });
+  }, [roomId]);
   const [copied, setCopied] = useState(false);
 
   // Initial load
