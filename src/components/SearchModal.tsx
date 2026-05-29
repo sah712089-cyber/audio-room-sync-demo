@@ -78,8 +78,9 @@ export function SearchModal({ open, onClose, roomId, addedBy, onAdded }: Props) 
         },
       });
       setSubmittingId(null);
-      setError("Song will be added in a minute");
-      setTimeout(onClose, 2000);
+      onAdded?.();
+      setError("Song added — syncing to queue…");
+      setTimeout(onClose, 1500);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Submission failed");
