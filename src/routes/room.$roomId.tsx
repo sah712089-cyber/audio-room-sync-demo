@@ -170,6 +170,26 @@ function RoomPage() {
     return () => { supabase.removeChannel(ch); };
   }, [roomId]);
 
+  // Auto-sync queue: realtime above + polling fallback. Faster polling for ~45s
+  // after the user adds a track, since the external backend processes asynchronously.
+  useEffect(() => {
+    const tick = () => { refetchQueue(); };
+    const isBoosted = () => Date.now() < boostUntil;
+    const interval = setInterval(() => { tick(); }, isBoosted() ? 2500 : 10000);
+    return () => clearInterval(interval);
+  }, [refetchQueue, boostUntil]);
+
+  // Refresh when tab regains focus
+  useEffect(() => {
+    const onFocus = () => refetchQueue();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [refetchQueue]);
+
   // Join handler
   const onJoin = useCallback(async (displayName: string) => {
     const { data, error } = await supabase
