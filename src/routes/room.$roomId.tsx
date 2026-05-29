@@ -240,15 +240,8 @@ function RoomPage() {
 
   const getTracks = useServerFn(listImageKitTracks);
 
-  async function runDiag() {
-    setDebugResult("Calling…");
-    try {
-      const r = await diag({});
-      setDebugResult(JSON.stringify(r, null, 2));
-    } catch (e) {
-      setDebugResult(String(e));
-    }
-  }
+
+
 
   const shareUrl = useMemo(
     () => (typeof window !== "undefined" ? window.location.href : ""),
