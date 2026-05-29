@@ -45,7 +45,7 @@ export const uploadTrack = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const path = await uploadToImageKit(data.fileBase64, data.fileName);
 
-    const { data: track, error } = await supabaseAdmin
+    const { data: track, error } = await (supabaseAdmin as any)
       .from("tracks")
       .insert({
         room_id: data.roomId,
