@@ -38,7 +38,7 @@ export function TrackQueue({ currentTrackId, isPlaying, onSelect, tracks }: Prop
             </div>
             <div className="min-w-0 flex-1">
               <div className={`text-xs sm:text-sm truncate ${active ? "font-semibold" : "font-medium"}`} title={t.title}>{t.title}</div>
-              <div className="text-[11px] sm:text-xs text-muted-foreground truncate">{t.artist}</div>
+              <div className="text-[11px] sm:text-xs text-muted-foreground truncate">{t.channel}</div>
             </div>
           </button>
         );
