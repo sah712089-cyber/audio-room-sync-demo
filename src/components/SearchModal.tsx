@@ -7,6 +7,7 @@ interface Props {
   onClose: () => void;
   roomId: string;
   addedBy?: string;
+  onAdded?: () => void;
 }
 
 function fmtDuration(s: number | null): string {
