@@ -90,27 +90,36 @@ export function MusicPlayer({
 
       <div className="flex flex-col items-center text-center">
         <div className="relative size-40 sm:size-56 rounded-3xl gradient-mint glow-mint flex items-center justify-center mb-6 sm:mb-8 overflow-hidden">
-          <div className="absolute inset-0 flex items-center justify-center gap-1.5">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <span
-                key={i}
-                className="w-1.5 bg-primary-foreground/90 rounded-full eq-bar"
-                style={{
-                  height: `${20 + (i % 4) * 18}px`,
-                  animationDelay: `${i * 0.08}s`,
-                  animationPlayState: isPlaying ? "running" : "paused",
-                }}
-              />
-            ))}
-          </div>
+          {track?.thumbnail ? (
+            <img
+              src={track.thumbnail}
+              alt={track.title}
+              className="absolute inset-0 size-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center gap-1.5">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="w-1.5 bg-primary-foreground/90 rounded-full eq-bar"
+                  style={{
+                    height: `${20 + (i % 4) * 18}px`,
+                    animationDelay: `${i * 0.08}s`,
+                    animationPlayState: isPlaying ? "running" : "paused",
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="w-full min-h-[60px] min-w-0">
           <h2 className="text-xl sm:text-2xl font-bold text-foreground truncate max-w-full" title={track?.title}>
             {track?.title ?? "Pick a track"}
           </h2>
-          <p className="text-muted-foreground mt-1 truncate">{track?.artist ?? "—"}</p>
+          <p className="text-muted-foreground mt-1 truncate">{track?.channel ?? "—"}</p>
         </div>
+
 
         <div className="mt-8 flex items-center gap-5">
           <button

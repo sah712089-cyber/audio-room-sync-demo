@@ -23,10 +23,12 @@ export function TrackQueue({ currentTrackId, isPlaying, onSelect, tracks }: Prop
                 : "hover:bg-secondary/40 text-foreground/85"
             }`}
           >
-            <div className={`size-7 sm:size-9 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-mono shrink-0 ${
+            <div className={`size-7 sm:size-9 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-mono shrink-0 overflow-hidden ${
               active ? "bg-mint text-primary-foreground glow-mint" : "bg-secondary/70 text-muted-foreground group-hover:text-foreground"
             }`}>
-              {active && isPlaying ? (
+              {t.thumbnail ? (
+                <img src={t.thumbnail} alt="" className="size-full object-cover" loading="lazy" />
+              ) : active && isPlaying ? (
                 <div className="flex gap-[2px] items-end h-3">
                   <span className="w-[2px] bg-current eq-bar" style={{ animationDelay: "0s" }} />
                   <span className="w-[2px] bg-current eq-bar" style={{ animationDelay: "0.15s" }} />
@@ -36,6 +38,7 @@ export function TrackQueue({ currentTrackId, isPlaying, onSelect, tracks }: Prop
                 String(i + 1).padStart(2, "0")
               )}
             </div>
+
             <div className="min-w-0 flex-1">
               <div className={`text-xs sm:text-sm truncate ${active ? "font-semibold" : "font-medium"}`} title={t.title}>{t.title}</div>
               <div className="text-[11px] sm:text-xs text-muted-foreground truncate">{t.channel}</div>

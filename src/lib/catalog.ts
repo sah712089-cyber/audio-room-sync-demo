@@ -15,9 +15,8 @@ export const CATALOG: Track[] = [
   {
     id: "raja-shivaji-anthem",
     title: "Raja Shivaji Anthem Chhatrapati",
-    artist: "Ajay Gogavale",
     channel: "Ajay Gogavale",
-    thumbnail: "test",
+    thumbnail: "",
     path: "/tracks/Raja%20Shivaji%20Anthem%20Chhatrapati%20-%20DjBaap.mp3",
     duration: 365,
   },

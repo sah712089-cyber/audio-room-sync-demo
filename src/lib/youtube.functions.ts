@@ -145,19 +145,35 @@ export const listImageKitTracks = createServerFn({ method: "POST" }).handler(asy
     throw new Error(`ImageKit list files failed: ${res.status} ${body}`);
   }
 
-  const files = (await res.json()) as ImageKitFile[];
+  const files = (await res.json()) as Array<ImageKitFile & {
+    customMetadata?: Record<string, string> | null;
+    embeddedMetadata?: { Title?: string; Artist?: string } | null;
+    thumbnail?: string;
+    duration?: number;
+    fileId?: string;
+  }>;
   const tracks: Track[] = files
     .filter((f) => f.fileType === "non-image" || f.name.endsWith(".mp3"))
     .map((f) => {
-      const name = f.name.replace(/\.mp3$/i, "").replace(/[_-]+/g, " ").trim();
-      const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      const parts = name.includes(" - ") ? name.split(/ - /).map((s) => s.trim()) : [name.replace(/\s+/g, " ").trim(), ""];
+      const cm = (f.customMetadata ?? {}) as Record<string, string>;
+      const em = f.embeddedMetadata ?? {};
+      const nameClean = f.name.replace(/\.mp3$/i, "").replace(/[_-]+/g, " ").trim();
+      const parts = nameClean.includes(" - ")
+        ? nameClean.split(/ - /).map((s) => s.trim())
+        : [nameClean, ""];
+
+      const title = (cm.title || em.Title || parts[0] || nameClean).replace(/^["']|["']$/g, "").trim();
+      const channel = (cm.channel || em.Artist || parts[1] || "Unknown").trim();
+      const thumbnail = cm.thumbnail || (f.thumbnail && !f.thumbnail.endsWith("AudioIcon.svg") ? f.thumbnail : "");
+
+      const id = (f.fileId || title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       return {
         id: id || `track-${Date.now()}`,
-        title: (parts[0]?.trim() || name).replace(/^["']|["']$/g, "").trim(),
-        artist: parts[1]?.trim() || "Unknown",
+        title,
+        channel,
+        thumbnail,
         path: `/tracks/${encodeURIComponent(f.name)}`,
-        duration: undefined,
+        duration: typeof f.duration === "number" ? f.duration : undefined,
       };
     });
 
